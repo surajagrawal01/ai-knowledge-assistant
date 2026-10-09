@@ -8,5 +8,9 @@
     "strict": true, // catches null/undefined bugs; non-negotiable
     "esModuleInterop": true,
     "skipLibCheck": true
-  }
+  },
+  "exclude": [
+    "prisma.config.ts",
+    "prisma.config.js"
+  ]
 }

@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CustomerTier {
+  regular
+  premium
+}
+
+enum ProductCategory {
+  phone
+  laptop
+  audio
+  wearable
+  accessory
+}
+
+enum OrderStatus {
+  placed
+  shipped
+  delivered
+  cancelled
+  returned
+}
+
+enum ShippingZone {
+  A
+  B
+  C
+}
+
+enum PaymentMethod {
+  upi
+  card
+  netbanking
+  emi
+  cod
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+// Keep in sync with ticket.schema.ts
+enum TicketCategory {
+  refund
+  return
+  replacement
+  cancellation
+  delivery
+  warranty
+  payment
+  other
+}
+
+// Keep in sync with ticket.schema.ts
+enum TicketPriority {
+  low
+  medium
+  high
+}
+
+enum TicketStatus {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+model Customer {
+  id        String       @id // "C001"
+  name      String // "Priya Sharma"
+  email     String       @unique // "priya.sharma@example.in"
+  phone     String? // "+91 91043 32181"
+  city      String // "Bengaluru"
+  state     String // "Karnataka"
+  tier      CustomerTier @default(regular)
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  orders  Order[]
+  tickets Ticket[]
+
+  @@map("customers")
+}
+
+model Product {
+  id               String          @id // "P001"
+  name             String // "NestBook Air 14"
+  category         ProductCategory
+  price            Decimal         @db.Decimal(10, 2) // rupees
+  warrantyMonths   Int             @map("warranty_months") // 12 or 6
+  returnWindowDays Int             @map("return_window_days") // 10 or 7
+  stock            Int             @default(0)
+
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id           String       @id // "O010"
+  customerId   String       @map("customer_id")
+  status       OrderStatus
+  shippingZone ShippingZone @map("shipping_zone")
+  subtotal     Decimal      @db.Decimal(10, 2)
+  shippingFee  Decimal      @map("shipping_fee") @db.Decimal(10, 2)
+  totalAmount  Decimal      @map("total_amount") @db.Decimal(10, 2)
+  orderedAt    DateTime     @map("ordered_at")
+  shippedAt    DateTime?    @map("shipped_at")
+  deliveredAt  DateTime?    @map("delivered_at")
+
+  customer Customer    @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+  payments Payment[]
+  tickets  Ticket[]
+
+  @@index([customerId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   String  @map("order_id")
+  productId String  @map("product_id")
+  quantity  Int     @default(1)
+  unitPrice Decimal @map("unit_price") @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id      String        @id // "PAY010"
+  orderId String        @map("order_id")
+  method  PaymentMethod
+  status  PaymentStatus
+  amount  Decimal       @db.Decimal(10, 2)
+  paidAt  DateTime?     @map("paid_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+model Ticket {
+  id          String         @id // "T001"
+  customerId  String         @map("customer_id")
+  orderId     String?        @map("order_id") // not every ticket is about an order
+  category    TicketCategory
+  priority    TicketPriority
+  status      TicketStatus   @default(open)
+  subject     String
+  description String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  order    Order?   @relation(fields: [orderId], references: [id])
+
+  @@index([customerId])
+  @@map("tickets")
+}
