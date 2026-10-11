@@ -1,0 +1,10 @@
+{
+    "name": "ai-operations-assistant",
+    "private": true,
+    "scripts": {
+        "dev": "concurrently -n api,web \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+    },
+    "devDependencies": {
+        "concurrently": "^9.0.0"
+    }
+}
