@@ -10,7 +10,7 @@ export type Usage = { inputTokens: number; outputTokens: number };
 export type GenerateTextInput = {
     system?: string;        // the model's "job description"
     prompt: string;         // the user input
-    temperature?: number;   // defaults to 0
+    temperature?: number;   // defaults to 0 (very deterministic)
 };
 
 export async function generateText(input: GenerateTextInput): Promise<{ text: string; usage: Usage }> {
