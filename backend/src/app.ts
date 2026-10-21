@@ -2,6 +2,7 @@
 import express from "express";
 import cors from "cors";
 import { env } from "./core/env.js";
+import { ticketExtractorRouter } from "./modules/ticket-extractor/ticket-extractor.routes.js";
 
 
 export const app = express();
@@ -12,7 +13,7 @@ app.use(express.json({ limit: "100kb" }));      // parse JSON bodies, cap size
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // One line per module, added as you build them:
-// app.use("/api/extract", ticketExtractorRouter);   ← Step 1
+app.use("/api/extract", ticketExtractorRouter);   //← Step 1
 // app.use("/api/agent",   supportAgentRouter);      ← Step 2
 // app.use("/api/triage",  triageRouter);            ← Step 2
 
