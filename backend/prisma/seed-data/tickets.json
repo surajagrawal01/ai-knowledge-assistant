@@ -1,0 +1,167 @@
+[
+  {
+    "id": "T001",
+    "customerId": "C001",
+    "orderId": "O010",
+    "category": "warranty",
+    "priority": "medium",
+    "status": "open",
+    "subject": "Laptop fan making loud noise",
+    "description": "NestBook Air fan is loud even when idle. Customer wants it checked.",
+    "createdDaysAgo": 5
+  },
+  {
+    "id": "T002",
+    "customerId": "C009",
+    "orderId": "O005",
+    "category": "refund",
+    "priority": "high",
+    "status": "open",
+    "subject": "Headphones stopped working, wants refund",
+    "description": "NestBeats headphones stopped working after about 4 months. Customer is upset and wants a refund instead of a repair.",
+    "createdDaysAgo": 20
+  },
+  {
+    "id": "T003",
+    "customerId": "C014",
+    "orderId": null,
+    "category": "payment",
+    "priority": "medium",
+    "status": "in_progress",
+    "subject": "Charged twice on card",
+    "description": "Customer sees two debits of the same amount. Verifying with payment gateway.",
+    "createdDaysAgo": 3
+  },
+  {
+    "id": "T004",
+    "customerId": "C004",
+    "orderId": "O028",
+    "category": "return",
+    "priority": "low",
+    "status": "open",
+    "subject": "Wants to return headphones",
+    "description": "Customer wants to return NestBeats headphones, says sound is average.",
+    "createdDaysAgo": 2
+  },
+  {
+    "id": "T005",
+    "customerId": "C006",
+    "orderId": "O035",
+    "category": "refund",
+    "priority": "medium",
+    "status": "resolved",
+    "subject": "Refund for NestWatch",
+    "description": "Watch returned and refund of full amount processed to card.",
+    "createdDaysAgo": 30
+  },
+  {
+    "id": "T006",
+    "customerId": "C012",
+    "orderId": "O015",
+    "category": "cancellation",
+    "priority": "low",
+    "status": "closed",
+    "subject": "Cancel order before shipping",
+    "description": "Customer cancelled; auto refund done.",
+    "createdDaysAgo": 29
+  },
+  {
+    "id": "T007",
+    "customerId": "C013",
+    "orderId": null,
+    "category": "other",
+    "priority": "low",
+    "status": "closed",
+    "subject": "Do you deliver to Coimbatore?",
+    "description": "Answered: yes, zone B, 4-5 days.",
+    "createdDaysAgo": 90
+  },
+  {
+    "id": "T008",
+    "customerId": "C016",
+    "orderId": null,
+    "category": "delivery",
+    "priority": "medium",
+    "status": "resolved",
+    "subject": "Package delayed",
+    "description": "Courier delay due to rain; delivered on day 6.",
+    "createdDaysAgo": 70
+  },
+  {
+    "id": "T009",
+    "customerId": "C017",
+    "orderId": null,
+    "category": "warranty",
+    "priority": "medium",
+    "status": "resolved",
+    "subject": "Watch strap broke",
+    "description": "Strap replaced under warranty.",
+    "createdDaysAgo": 100
+  },
+  {
+    "id": "T010",
+    "customerId": "C019",
+    "orderId": null,
+    "category": "delivery",
+    "priority": "low",
+    "status": "closed",
+    "subject": "Delivery to Leh taking long",
+    "description": "Explained zone C timelines (6-8 days).",
+    "createdDaysAgo": 45
+  },
+  {
+    "id": "T011",
+    "customerId": "C020",
+    "orderId": null,
+    "category": "replacement",
+    "priority": "high",
+    "status": "resolved",
+    "subject": "Phone screen flickering",
+    "description": "Replaced within 48 hours of delivery.",
+    "createdDaysAgo": 80
+  },
+  {
+    "id": "T012",
+    "customerId": "C008",
+    "orderId": "O040",
+    "category": "payment",
+    "priority": "low",
+    "status": "closed",
+    "subject": "EMI schedule question",
+    "description": "Explained EMI is handled by customer's bank.",
+    "createdDaysAgo": 40
+  },
+  {
+    "id": "T013",
+    "customerId": "C010",
+    "orderId": "O004",
+    "category": "other",
+    "priority": "low",
+    "status": "closed",
+    "subject": "Invoice copy needed",
+    "description": "GST invoice emailed.",
+    "createdDaysAgo": 110
+  },
+  {
+    "id": "T014",
+    "customerId": "C011",
+    "orderId": null,
+    "category": "other",
+    "priority": "low",
+    "status": "closed",
+    "subject": "How to pair NestMouse",
+    "description": "Shared pairing steps.",
+    "createdDaysAgo": 60
+  },
+  {
+    "id": "T015",
+    "customerId": "C001",
+    "orderId": null,
+    "category": "delivery",
+    "priority": "low",
+    "status": "closed",
+    "subject": "Change delivery address",
+    "description": "Address updated before shipping.",
+    "createdDaysAgo": 250
+  }
+]

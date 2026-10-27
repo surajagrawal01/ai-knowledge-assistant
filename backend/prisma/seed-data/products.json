@@ -1,0 +1,92 @@
+[
+  {
+    "id": "P001",
+    "name": "NestBook Air 14",
+    "category": "laptop",
+    "price": 64999,
+    "warrantyMonths": 12,
+    "returnWindowDays": 10,
+    "stock": 25
+  },
+  {
+    "id": "P002",
+    "name": "NestBook Pro 16",
+    "category": "laptop",
+    "price": 99999,
+    "warrantyMonths": 12,
+    "returnWindowDays": 10,
+    "stock": 12
+  },
+  {
+    "id": "P003",
+    "name": "NestPhone 12",
+    "category": "phone",
+    "price": 34999,
+    "warrantyMonths": 12,
+    "returnWindowDays": 7,
+    "stock": 40
+  },
+  {
+    "id": "P004",
+    "name": "NestPhone 12 Lite",
+    "category": "phone",
+    "price": 21999,
+    "warrantyMonths": 12,
+    "returnWindowDays": 7,
+    "stock": 55
+  },
+  {
+    "id": "P005",
+    "name": "NestBuds Pro",
+    "category": "audio",
+    "price": 4999,
+    "warrantyMonths": 6,
+    "returnWindowDays": 7,
+    "stock": 120
+  },
+  {
+    "id": "P006",
+    "name": "NestBeats Headphones",
+    "category": "audio",
+    "price": 7999,
+    "warrantyMonths": 6,
+    "returnWindowDays": 7,
+    "stock": 60
+  },
+  {
+    "id": "P007",
+    "name": "NestWatch S",
+    "category": "wearable",
+    "price": 12999,
+    "warrantyMonths": 12,
+    "returnWindowDays": 7,
+    "stock": 35
+  },
+  {
+    "id": "P008",
+    "name": "NestCharge 65W USB-C Charger",
+    "category": "accessory",
+    "price": 1999,
+    "warrantyMonths": 6,
+    "returnWindowDays": 7,
+    "stock": 200
+  },
+  {
+    "id": "P009",
+    "name": "NestSleeve 14-inch Laptop Sleeve",
+    "category": "accessory",
+    "price": 1299,
+    "warrantyMonths": 6,
+    "returnWindowDays": 7,
+    "stock": 90
+  },
+  {
+    "id": "P010",
+    "name": "NestMouse Wireless",
+    "category": "accessory",
+    "price": 999,
+    "warrantyMonths": 6,
+    "returnWindowDays": 7,
+    "stock": 150
+  }
+]

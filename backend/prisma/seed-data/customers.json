@@ -1,0 +1,202 @@
+[
+  {
+    "id": "C001",
+    "name": "Priya Sharma",
+    "email": "priya.sharma@example.in",
+    "phone": "+91 91043 32181",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "tier": "premium",
+    "joinedDaysAgo": 600
+  },
+  {
+    "id": "C002",
+    "name": "Rahul Verma",
+    "email": "rahul.verma@example.in",
+    "phone": "+91 99600 13389",
+    "city": "Jaipur",
+    "state": "Rajasthan",
+    "tier": "regular",
+    "joinedDaysAgo": 200
+  },
+  {
+    "id": "C003",
+    "name": "Ananya Iyer",
+    "email": "ananya.iyer@example.in",
+    "phone": "+91 90838 63794",
+    "city": "Chennai",
+    "state": "Tamil Nadu",
+    "tier": "regular",
+    "joinedDaysAgo": 300
+  },
+  {
+    "id": "C004",
+    "name": "Arjun Reddy",
+    "email": "arjun.reddy@example.in",
+    "phone": "+91 90265 42351",
+    "city": "Hyderabad",
+    "state": "Telangana",
+    "tier": "regular",
+    "joinedDaysAgo": 250
+  },
+  {
+    "id": "C005",
+    "name": "Sneha Patil",
+    "email": "sneha.patil@example.in",
+    "phone": "+91 91615 59407",
+    "city": "Pune",
+    "state": "Maharashtra",
+    "tier": "regular",
+    "joinedDaysAgo": 90
+  },
+  {
+    "id": "C006",
+    "name": "Kavya Nair",
+    "email": "kavya.nair@example.in",
+    "phone": "+91 98161 84959",
+    "city": "Kochi",
+    "state": "Kerala",
+    "tier": "premium",
+    "joinedDaysAgo": 500
+  },
+  {
+    "id": "C007",
+    "name": "Vikram Singh",
+    "email": "vikram.singh@example.in",
+    "phone": "+91 93103 41316",
+    "city": "Delhi",
+    "state": "Delhi",
+    "tier": "regular",
+    "joinedDaysAgo": 150
+  },
+  {
+    "id": "C008",
+    "name": "Meera Joshi",
+    "email": "meera.joshi@example.in",
+    "phone": "+91 94752 55341",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "tier": "premium",
+    "joinedDaysAgo": 420
+  },
+  {
+    "id": "C009",
+    "name": "Rohan Gupta",
+    "email": "rohan.gupta@example.in",
+    "phone": "+91 99283 27648",
+    "city": "Lucknow",
+    "state": "Uttar Pradesh",
+    "tier": "premium",
+    "joinedDaysAgo": 700
+  },
+  {
+    "id": "C010",
+    "name": "Farhan Qureshi",
+    "email": "farhan.qureshi@example.in",
+    "phone": "+91 93503 05641",
+    "city": "Indore",
+    "state": "Madhya Pradesh",
+    "tier": "regular",
+    "joinedDaysAgo": 400
+  },
+  {
+    "id": "C011",
+    "name": "Deepak Kumar",
+    "email": "deepak.kumar@example.in",
+    "phone": "+91 93953 76724",
+    "city": "Kolkata",
+    "state": "West Bengal",
+    "tier": "regular",
+    "joinedDaysAgo": 120
+  },
+  {
+    "id": "C012",
+    "name": "Pooja Mishra",
+    "email": "pooja.mishra@example.in",
+    "phone": "+91 92388 49696",
+    "city": "Bhubaneswar",
+    "state": "Odisha",
+    "tier": "regular",
+    "joinedDaysAgo": 180
+  },
+  {
+    "id": "C013",
+    "name": "Siddharth Menon",
+    "email": "siddharth.menon@example.in",
+    "phone": "+91 95328 71012",
+    "city": "Coimbatore",
+    "state": "Tamil Nadu",
+    "tier": "regular",
+    "joinedDaysAgo": 330
+  },
+  {
+    "id": "C014",
+    "name": "Aditi Rao",
+    "email": "aditi.rao@example.in",
+    "phone": "+91 92691 66978",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "tier": "premium",
+    "joinedDaysAgo": 550
+  },
+  {
+    "id": "C015",
+    "name": "Tenzing Bhutia",
+    "email": "tenzing.bhutia@example.in",
+    "phone": "+91 94801 84514",
+    "city": "Gangtok",
+    "state": "Sikkim",
+    "tier": "regular",
+    "joinedDaysAgo": 210
+  },
+  {
+    "id": "C016",
+    "name": "Harpreet Kaur",
+    "email": "harpreet.kaur@example.in",
+    "phone": "+91 96270 48281",
+    "city": "Chandigarh",
+    "state": "Chandigarh",
+    "tier": "regular",
+    "joinedDaysAgo": 260
+  },
+  {
+    "id": "C017",
+    "name": "Nikhil Deshmukh",
+    "email": "nikhil.deshmukh@example.in",
+    "phone": "+91 94893 25288",
+    "city": "Nagpur",
+    "state": "Maharashtra",
+    "tier": "premium",
+    "joinedDaysAgo": 480
+  },
+  {
+    "id": "C018",
+    "name": "Rahul Mehta",
+    "email": "rahul.mehta18@example.in",
+    "phone": "+91 90957 01543",
+    "city": "Delhi",
+    "state": "Delhi",
+    "tier": "regular",
+    "joinedDaysAgo": 100
+  },
+  {
+    "id": "C019",
+    "name": "Lakshmi Pillai",
+    "email": "lakshmi.pillai@example.in",
+    "phone": "+91 90391 17182",
+    "city": "Leh",
+    "state": "Ladakh",
+    "tier": "regular",
+    "joinedDaysAgo": 160
+  },
+  {
+    "id": "C020",
+    "name": "Imran Shaikh",
+    "email": "imran.shaikh@example.in",
+    "phone": "+91 92782 48963",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "tier": "regular",
+    "joinedDaysAgo": 140
+  }
+]
