@@ -29,4 +29,4 @@ console.log(await extractTicketV0("I will go to CONSUMER COURT if I don't get my
 console.log(await extractTicketV0("Both the buds and the charger from O045 are dead now. C003"));
 
 //Run the script To Test
-// npx tsx --env-file=.env backend/scripts/try-extract.ts
+// npx tsx --env-file=.env scripts/try-extract.ts
