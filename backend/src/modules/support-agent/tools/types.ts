@@ -1,7 +1,7 @@
 // Zod + JSON Schema, and core/llm.ts turns that into a provider declaration.
 import { z } from "zod";
 
-// A closed list, so evals and the UI can switch on it. B2 adds REPEATED_CALL and TOO_MANY_CALLS.
+// A closed list, so evals and the UI can switch on it.
 export const TOOL_ERROR_CODES = [
   "UNKNOWN_TOOL",
   "INVALID_ARGS",
@@ -10,6 +10,9 @@ export const TOOL_ERROR_CODES = [
   "NOT_ALLOWED",
   "TOOL_FAILED",
   "RESULT_TOO_LARGE",
+  // B2: set by the agent loop's guards. The call is answered with this and never executed.
+  "REPEATED_CALL",
+  "TOO_MANY_CALLS",
 ] as const;
 export type ToolErrorCode = (typeof TOOL_ERROR_CODES)[number];
 
