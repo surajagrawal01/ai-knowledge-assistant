@@ -48,4 +48,10 @@ export const getPayment = defineTool({
       payments,
     };
   },
+  summarize(r) {
+    const latest = r.payments[0];
+    if (latest === undefined) return "no payments";
+    const more = r.payments.length > 1 ? ` (${r.payments.length} records)` : "";
+    return `${latest.method} · ${latest.status} · ₹${latest.amountInr.toLocaleString("en-IN")}${more}`;
+  },
 });

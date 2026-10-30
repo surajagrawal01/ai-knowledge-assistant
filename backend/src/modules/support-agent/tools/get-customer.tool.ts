@@ -21,4 +21,5 @@ export const getCustomer = defineTool({
     if (customer === null) return toolError("NOT_FOUND", `No customer with id ${customerId}`);
     return { ...customer };
   },
+  summarize: (c) => `${c.name} · ${c.city} · ${c.tier}`,
 });

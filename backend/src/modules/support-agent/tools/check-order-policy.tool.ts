@@ -52,4 +52,17 @@ export const checkOrderPolicy = defineTool({
     );
     return { ...policy };
   },
+  summarize(p) {
+    const d = p.delivery;
+    if (d.applicable) {
+      return `zone ${d.zone} · ${d.daysSinceShipped} days since shipped · ${d.delayed ? `delayed by ${d.daysOverThreshold}` : "on time"}`;
+    }
+    if (p.status !== "delivered") return `${p.orderId} · ${p.status} · ${d.reason}`;
+    const returnable = p.items.filter((i) => i.return.eligible).length;
+    const warranty = p.items.filter((i) => i.warranty.active).length;
+    return (
+      `delivered ${p.daysSinceDelivery} days ago · returnable ${returnable}/${p.items.length} · ` +
+      `warranty ${warranty}/${p.items.length} · damage window ${p.damagedOnArrival.windowOpen ? "open" : "closed"}`
+    );
+  },
 });

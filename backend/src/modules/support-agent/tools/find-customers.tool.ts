@@ -84,4 +84,6 @@ export const findCustomers = defineTool({
       matches: matches.slice(0, MAX_MATCHES).map(({ strength: _strength, ...m }) => m),
     };
   },
+  summarize: (r) =>
+    r.count === 0 ? "no matches" : `${r.count} match${r.count === 1 ? "" : "es"}: ${r.matches.map((m) => m.id).join(", ")}`,
 });

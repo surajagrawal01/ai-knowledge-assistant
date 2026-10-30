@@ -43,4 +43,5 @@ export const getOrder = defineTool({
       totalInr: toInr(order.totalAmount),
     };
   },
+  summarize: (o) => `${o.id} · ${o.status} · zone ${o.zone} · ${o.items.map((i) => i.name).join(", ")}`,
 });

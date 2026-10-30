@@ -45,4 +45,9 @@ export const getCustomerTickets = defineTool({
       tickets: tickets.map(({ createdAt, ...t }) => ({ ...t, createdDaysAgo: daysAgo(createdAt, ctx.now) })),
     };
   },
+  summarize(r) {
+    if (r.count === 0) return "0 tickets";
+    const shown = r.tickets.slice(0, 3).map((t) => `${t.id} (${t.category}, ${t.status})`).join(", ");
+    return `${r.count} ticket${r.count === 1 ? "" : "s"}: ${shown}${r.count > 3 ? ", …" : ""}`;
+  },
 });

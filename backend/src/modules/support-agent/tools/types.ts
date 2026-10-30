@@ -31,12 +31,15 @@ export type ToolContext = {
 export type ToolKind = "read" | "write";
 
 // What you write per tool: fully typed. `run` only ever receives validated args.
-export type ToolDef<A> = {
+// R = the success shape, so `summarize` can read its fields without casts.
+export type ToolDef<A, R extends ToolResult> = {
   name: string;
   description: string;           // a prompt: what it does, when to use it (vs siblings), what comes back
   args: z.ZodType<A>;
   kind: ToolKind;
-  run: (args: A, ctx: ToolContext) => Promise<ToolResult>;
+  run: (args: A, ctx: ToolContext) => Promise<R | ToolError>;
+  // B2: one short line for the trace (humans and evals, never the model). Only the tool knows which fact matters.
+  summarize?: (result: R) => string;
 };
 
 export type InvokeOutcome =
@@ -50,6 +53,7 @@ export type RegisteredTool = {
   kind: ToolKind;
   jsonSchema: Record<string, unknown>;
   invoke: (rawArgs: unknown, ctx: ToolContext) => Promise<InvokeOutcome>;
+  summarize: ((result: ToolResult) => string) | null;   // only for SUCCESS results (trace.ts checks ok first)
 };
 
 export type ToolRegistry = Readonly<Record<string, RegisteredTool>>;
@@ -60,7 +64,7 @@ const TOOL_NAME = /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/;
 // Why this exists: a registry holding ToolDef<{orderId}> and ToolDef<{customerId}> can't be
 // typed without `any`. The closure keeps `A` inside, so `run` gets typed args, while
 // the registry stores one uniform type. One schema → JSON Schema for the model AND safeParse for us.
-export function defineTool<A>(def: ToolDef<A>): RegisteredTool {
+export function defineTool<A, R extends ToolResult>(def: ToolDef<A, R>): RegisteredTool {
   if (!TOOL_NAME.test(def.name)) {
     throw new Error(`Invalid tool name "${def.name}"`);   // at startup, before any user sees it
   }
@@ -70,6 +74,7 @@ export function defineTool<A>(def: ToolDef<A>): RegisteredTool {
 
   // `$schema` is metadata for validators, not part of a parameter declaration: keep the declaration minimal.
   const { $schema: _metadata, ...jsonSchema } = z.toJSONSchema(def.args);
+  const summarize = def.summarize;
 
   return {
     name: def.name,
@@ -81,5 +86,7 @@ export function defineTool<A>(def: ToolDef<A>): RegisteredTool {
       if (!parsed.success) return { ok: false, issues: parsed.error.issues };
       return { ok: true, result: await def.run(parsed.data, ctx) };
     },
+    // The one cast in the tool layer: the registry erases R, and a success result is what `run` returned as R.
+    summarize: summarize === undefined ? null : (result) => summarize(result as R),
   };
 }

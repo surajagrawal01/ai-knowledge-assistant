@@ -53,4 +53,8 @@ export const getCustomerOrders = defineTool({
       })),
     };
   },
+  summarize(r) {
+    const latest = r.orders[0];
+    return latest === undefined ? "no orders" : `${r.totalOrders} orders, latest ${latest.id} (${latest.status})`;
+  },
 });
