@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { env } from "./core/env.js";
 import { ticketExtractorRouter } from "./modules/ticket-extractor/ticket-extractor.routes.js";
+import { supportAgentRouter } from "./modules/support-agent/index.js";
 
 
 export const app = express();
@@ -14,7 +15,7 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // One line per module, added as you build them:
 app.use("/api/extract", ticketExtractorRouter);   //← Step 1
-// app.use("/api/agent",   supportAgentRouter);      ← Step 2
+app.use("/api/agent/chat", supportAgentRouter);   //← Step 2 (B2)
 // app.use("/api/triage",  triageRouter);            ← Step 2
 
 // Error middleware: 4 arguments tells Express "this handles errors"
