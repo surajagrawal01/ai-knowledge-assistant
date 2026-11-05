@@ -10,7 +10,10 @@
     "smoke": "tsx --env-file=.env scripts/smoke-test.ts",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
-    "db:seed": "tsx --env-file=.env prisma/seed.ts"
+    "db:seed": "tsx --env-file=.env prisma/seed.ts",
+    "test:agent": "tsx --env-file=.env --test evals/support-agent/agent-loop.test.ts",
+    "try:agent": "tsx --env-file=.env scripts/support-agent/try-agent.ts",
+    "eval:agent": "tsx --env-file=.env evals/support-agent/agent-loop/run.ts"
   },
   "keywords": [],
   "author": "",
