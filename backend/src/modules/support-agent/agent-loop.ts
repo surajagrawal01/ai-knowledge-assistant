@@ -12,6 +12,10 @@
 //      too many TOOL_FAILED?       → tool_failure
 //   loop ended                     → max_steps
 //
+// Optional `finish` tool (Part C): the run ends when the model calls it ALONE with valid args
+// (outcome "submitted", the parsed args are the result). Invalid args go back as an INVALID_ARGS
+// result to fix. Text instead of the call → one nudge; the last step forces the call (mode "any").
+//
 // It knows nothing about triage, prompts or specific tools: Part C reuses it with its own.
 import {
     addUsage,
@@ -20,10 +24,12 @@ import {
     ZERO_USAGE,
     type ChatMessage,
     type ToolCall,
+    type ToolSpec,
     type Usage,
 } from "../../core/llm.js";
-import { historySize, toolResultsMessage } from "./history.js";
-import { executeToolCalls, logToolCall, redactArgs, type ToolExecution } from "./tool-executor.js";
+import { z } from "zod";
+import { historySize, toolResultsMessage, userMessage } from "./history.js";
+import { executeToolCalls, formatIssues, logToolCall, redactArgs, type ToolExecution } from "./tool-executor.js";
 import { toolError } from "./tools/common.js";
 import { toToolSpecs } from "./tools/index.js";
 import type { ToolContext, ToolErrorCode, ToolRegistry } from "./tools/types.js";
@@ -35,10 +41,27 @@ export const DEFAULT_TIMEOUT_MS = 30_000;  // overall budget for one run
 export const MAX_CALLS_PER_STEP = 5;       // stops a "fetch everything" fan-out in a single step
 export const MAX_INFRA_FAILURES = 3;       // 3 TOOL_FAILED in one run: the DB is probably down, stop paying
 
-export type AgentOutcome = "answered" | "max_steps" | "timeout" | "tool_failure" | "llm_error" | "empty_response";
-export type AgentFailure = Exclude<AgentOutcome, "answered">;
+export type AgentOutcome =
+    | "answered" | "submitted"
+    | "max_steps" | "timeout" | "tool_failure" | "llm_error" | "empty_response" | "no_submission";
+export type AgentFailure = Exclude<AgentOutcome, "answered" | "submitted">;
 
-export type RunAgentInput = {
+// A tool the model calls to END the run: its arguments are the result. Never executed, never in
+// the registry. The schema validates the args; the model sees it as JSON Schema like any tool.
+export type FinishTool<F> = {
+    name: string;
+    description: string;
+    schema: z.ZodType<F>;
+    summarize?: (value: F) => string;   // one line for the trace
+};
+
+// Same JSON Schema rules as defineTool. io "input": a field with a default is optional for the model.
+export function finishToolSpec(tool: FinishTool<unknown>): ToolSpec {
+    const { $schema: _metadata, ...jsonSchema } = z.toJSONSchema(tool.schema, { io: "input" });
+    return { name: tool.name, description: tool.description, parametersJsonSchema: jsonSchema };
+}
+
+export type RunAgentInput<F = never> = {
     messages: ChatMessage[];     // the starting history; must end with a user message
     system: string;              // support chat now, triage in Part C
     tools: ToolRegistry;         // the allow-list for THIS run
@@ -46,10 +69,12 @@ export type RunAgentInput = {
     maxSteps?: number;           // clamped to 1..HARD_MAX_STEPS
     timeoutMs?: number;
     generate?: typeof generateWithTools;   // overridable so offline tests can script the model (no API call)
+    finish?: FinishTool<F>;      // set → the run must end with this call (triage); unset → ends with text (chat)
 };
 
-export type AgentRunResult =
+export type AgentRunResult<F = never> =
     | { ok: true; outcome: "answered"; answer: string; run: AgentRun; messages: ChatMessage[] }
+    | { ok: true; outcome: "submitted"; answer: null; submission: F; run: AgentRun; messages: ChatMessage[] }
     | { ok: false; outcome: AgentFailure; reason: string; answer: null; run: AgentRun; messages: ChatMessage[] };
 
 // Short and safe to show in the UI. The details are in the trace and the server log.
@@ -59,6 +84,7 @@ const FAILURE_REASONS: Readonly<Record<AgentFailure, string>> = {
     tool_failure: "Some data couldn't be loaded right now. Please try again.",
     llm_error: "The AI service is unavailable right now. Please try again.",
     empty_response: "The assistant returned no answer.",
+    no_submission: "The assistant didn't produce a suggestion. See what it checked below.",
 };
 
 // ── guards ──────────────────────────────────────────────────────────────
@@ -112,6 +138,19 @@ export function guardCalls(calls: ToolCall[], seen: Set<string>): GuardDecision[
     });
 }
 
+// The finish call is checked HERE, not by the executor: it's never run, only validated.
+// Accepted only ALONE: next to other calls the model would submit before seeing their results.
+function finishCallDecision<F>(call: ToolCall, finishTool: FinishTool<F>, alone: boolean): GuardDecision | { call: ToolCall; submission: F } {
+    if (!alone) {
+        const message = `Call ${finishTool.name} on its own, after you have seen the results of your other tool calls.`;
+        return { call, blocked: blockedExecution(call, "INVALID_ARGS", message), guard: "invalid_submission" };
+    }
+    const parsed = finishTool.schema.safeParse(call.args);
+    if (parsed.success) return { call, submission: parsed.data };
+    const message = `Invalid ${finishTool.name} arguments: ${formatIssues(parsed.error.issues)}. Fix them and call ${finishTool.name} again.`;
+    return { call, blocked: blockedExecution(call, "INVALID_ARGS", message), guard: "invalid_submission" };
+}
+
 // ── the loop ────────────────────────────────────────────────────────────
 
 type RunState = {
@@ -129,8 +168,13 @@ function guardrail(state: RunState, kind: GuardrailKind, detail: string): void {
     state.trace.push({ type: "guardrail", step: state.step, kind, detail });
 }
 
-// Six exits, ONE builder: no exit can forget the trace or the run log.
-function finish(state: RunState, end: { outcome: "answered"; answer: string } | { outcome: AgentFailure }): AgentRunResult {
+type RunEnd<F> =
+    | { outcome: "answered"; answer: string }
+    | { outcome: "submitted"; submission: F }
+    | { outcome: AgentFailure };
+
+// Every exit, ONE builder: no exit can forget the trace or the run log.
+function finish<F>(state: RunState, end: RunEnd<F>): AgentRunResult<F> {
     const run: AgentRun = {
         runId: state.runId,
         steps: state.trace,
@@ -159,18 +203,26 @@ function finish(state: RunState, end: { outcome: "answered"; answer: string } | 
     if (end.outcome === "answered") {
         return { ok: true, outcome: "answered", answer: end.answer, run, messages: state.messages };
     }
+    if (end.outcome === "submitted") {
+        return { ok: true, outcome: "submitted", answer: null, submission: end.submission, run, messages: state.messages };
+    }
     return { ok: false, outcome: end.outcome, reason: FAILURE_REASONS[end.outcome], answer: null, run, messages: state.messages };
 }
 
-export async function runAgent(input: RunAgentInput): Promise<AgentRunResult> {
+export async function runAgent<F = never>(input: RunAgentInput<F>): Promise<AgentRunResult<F>> {
     // Caller bugs, not AI failures: the route already guarantees both.
     if (input.messages.at(-1)?.role !== "user") throw new Error("runAgent: messages must end with a user message");
     if (Object.keys(input.tools).length === 0) throw new Error("runAgent: no tools (use generateText for a plain chatbot)");
+    const finishTool = input.finish;
+    if (finishTool && Object.hasOwn(input.tools, finishTool.name)) {
+        throw new Error(`runAgent: finish tool "${finishTool.name}" must not also be in the registry`);
+    }
 
     const maxSteps = Math.min(Math.max(Math.floor(input.maxSteps ?? DEFAULT_MAX_STEPS), 1), HARD_MAX_STEPS);
     const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const generate = input.generate ?? generateWithTools;
-    const toolSpecs = toToolSpecs(input.tools);   // built once, sent on every model call
+    // Built once, sent on every model call. The finish tool is declared like any other.
+    const toolSpecs = finishTool ? [...toToolSpecs(input.tools), finishToolSpec(finishTool)] : toToolSpecs(input.tools);
 
     const state: RunState = {
         runId: input.ctx.runId,
@@ -185,6 +237,7 @@ export async function runAgent(input: RunAgentInput): Promise<AgentRunResult> {
     const deadline = state.started + timeoutMs;
     const seenCalls = new Set<string>();
     let infraFailures = 0;
+    let nudged = false;
 
     for (let step = 1; step <= maxSteps; step++) {
         state.step = step;
@@ -196,9 +249,16 @@ export async function runAgent(input: RunAgentInput): Promise<AgentRunResult> {
         }
 
         // 2. The model decides: answer, or which tools to call next.
+        //    With a finish tool, the LAST step forces it: a run always ends with a suggestion if it can.
+        const forceFinish = finishTool !== undefined && (nudged || step === maxSteps);
         let res;
         try {
-            res = await generate({ system: input.system, messages: state.messages, tools: toolSpecs });
+            res = await generate({
+                system: input.system,
+                messages: state.messages,
+                tools: toolSpecs,
+                ...(forceFinish ? { mode: "any" as const, allowedTools: [finishTool.name] } : {}),
+            });
         } catch (err) {
             if (!(err instanceof LlmApiError)) throw err;   // anything else is a bug → 500
             console.error(`[agent] ${state.runId} model call ${step} failed:`, err.message);
@@ -214,8 +274,20 @@ export async function runAgent(input: RunAgentInput): Promise<AgentRunResult> {
                 return finish(state, { outcome: "empty_response" });
             }
             state.messages.push(res.assistantMessage);
-            state.trace.push({ type: "model_text", step, text: res.text, final: true });
-            return finish(state, { outcome: "answered", answer: res.text });
+            if (finishTool === undefined) {
+                state.trace.push({ type: "model_text", step, text: res.text, final: true });
+                return finish(state, { outcome: "answered", answer: res.text });
+            }
+            // Text where the finish call belongs: nudge once, then the next step forces the call.
+            state.trace.push({ type: "model_text", step, text: res.text, final: false });
+            if (nudged || step === maxSteps) {
+                guardrail(state, "no_submission", `replied with text instead of calling ${finishTool.name}`);
+                return finish(state, { outcome: "no_submission" });
+            }
+            guardrail(state, "no_submission", `replied with text; nudged to call ${finishTool.name}`);
+            state.messages.push(userMessage(`Call ${finishTool.name} with your conclusion now. Do not reply with text.`));
+            nudged = true;
+            continue;
         }
 
         // 4. The model's turn FIRST, unchanged (raw keeps the thought signatures).
@@ -223,12 +295,46 @@ export async function runAgent(input: RunAgentInput): Promise<AgentRunResult> {
         state.messages.push(res.assistantMessage);
         if (res.text !== null) state.trace.push({ type: "model_text", step, text: res.text, final: false });
 
-        // 5. Guard, then execute only what passed.
-        const decisions = guardCalls(res.toolCalls, seenCalls);
+        // 5. A valid finish call, alone: done. The model's turn is in the history; nothing to execute.
+        const finishCalls = finishTool ? res.toolCalls.filter((c) => c.name === finishTool.name) : [];
+        const alone = res.toolCalls.length === 1;
+        const firstFinish = finishCalls[0];
+        if (finishTool && firstFinish && alone) {
+            const decision = finishCallDecision(firstFinish, finishTool, true);
+            if ("submission" in decision) {
+                state.trace.push({
+                    type: "tool_call",
+                    step,
+                    tool: finishTool.name,
+                    args: redactArgs(firstFinish.args),
+                    ok: true,
+                    errorCode: null,
+                    summary: finishTool.summarize?.(decision.submission) ?? "submitted",
+                    ms: 0,
+                });
+                state.toolCalls += 1;
+                return finish(state, { outcome: "submitted", submission: decision.submission });
+            }
+        }
+
+        // 6. Guard, then execute only what passed. Finish calls are answered (rejected) here, never executed.
+        const regular = res.toolCalls.filter((c) => c.name !== finishTool?.name);
+        const regularDecisions = guardCalls(regular, seenCalls);
+        let nextRegular = 0;
+        const decisions = res.toolCalls.map((call): GuardDecision => {
+            if (finishTool && call.name === finishTool.name) {
+                const decision = finishCallDecision(call, finishTool, alone);
+                if ("submission" in decision) throw new Error("runAgent: a lone valid finish call was not handled");
+                return decision;
+            }
+            const decision = regularDecisions[nextRegular++];
+            if (decision === undefined) throw new Error("runAgent: guardCalls returned fewer decisions than calls");
+            return decision;
+        });
         const toRun = decisions.flatMap((d) => (d.blocked === null ? [d.call] : []));
         const executed = toRun.length > 0 ? await executeToolCalls(toRun, input.tools, input.ctx) : [];
 
-        // 6. Merge back into CALL order: executed results come back in toRun's order.
+        // 7. Merge back into CALL order: executed results come back in toRun's order.
         let next = 0;
         const executions = decisions.map((d): ToolExecution => {
             if (d.blocked !== null) return d.blocked;
@@ -237,10 +343,10 @@ export async function runAgent(input: RunAgentInput): Promise<AgentRunResult> {
             return execution;
         });
 
-        // 7. ONE tool message: a result for every call, same order, errors and blocked calls included.
+        // 8. ONE tool message: a result for every call, same order, errors and blocked calls included.
         state.messages.push(toolResultsMessage(executions));
 
-        // 8. Trace (+ a log line for blocked calls: the executor already logged the real ones).
+        // 9. Trace (+ a log line for blocked calls: the executor already logged the real ones).
         decisions.forEach((d, i) => {
             const execution = executions[i];
             if (execution === undefined) return;
@@ -260,7 +366,7 @@ export async function runAgent(input: RunAgentInput): Promise<AgentRunResult> {
         });
         state.toolCalls += executions.length;
 
-        // 9. One TOOL_FAILED goes to the model (it can say what's missing). Several = infrastructure down.
+        // 10. One TOOL_FAILED goes to the model (it can say what's missing). Several = infrastructure down.
         infraFailures += executions.filter((e) => e.errorCode === "TOOL_FAILED").length;
         if (infraFailures >= MAX_INFRA_FAILURES) {
             guardrail(state, "tool_failure", `${infraFailures} TOOL_FAILED results in this run`);
@@ -268,6 +374,6 @@ export async function runAgent(input: RunAgentInput): Promise<AgentRunResult> {
         }
     }
 
-    guardrail(state, "max_steps", `no answer after ${maxSteps} model calls`);
+    guardrail(state, "max_steps", `no ${finishTool ? finishTool.name : "answer"} after ${maxSteps} model calls`);
     return finish(state, { outcome: "max_steps" });
 }

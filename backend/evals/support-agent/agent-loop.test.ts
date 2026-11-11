@@ -284,6 +284,132 @@ test("runAgent refuses caller bugs: history not ending in user, no tools", async
   await assert.rejects(runAgent({ messages: start(), system: "s", tools: buildRegistry([]), ctx, generate: model.generate }));
 });
 
+// ── finish tool (Part C) ────────────────────────────────────────────────
+
+const SUBMIT = {
+  name: "submitResult",
+  description: "test",
+  schema: z.object({ action: z.enum(["create", "ask"]), customerId: z.string() }),
+  summarize: (v: { action: string }) => `action: ${v.action}`,
+};
+
+// Like scripted(), but also records the forced mode of each call.
+function scriptedWithMode(turns: GenerateWithToolsOutput[]) {
+  const modes: (string | undefined)[] = [];
+  const base = scripted(turns);
+  const generate = async (input: GenerateWithToolsInput) => {
+    modes.push(input.mode === "any" ? `any:${(input.allowedTools ?? []).join(",")}` : input.mode);
+    return base.generate(input);
+  };
+  return { generate, modes, sent: base.sent };
+}
+
+test("finish: tool round, then a valid finish call → submitted, parsed submission, finish tool declared", async (t) => {
+  quiet(t);
+  const model = scriptedWithMode([
+    turn([{ name: "getCustomer", args: { customerId: "C001" } }]),
+    turn([{ name: "submitResult", args: { action: "create", customerId: "C001" } }]),
+  ]);
+  const r = await runAgent({ messages: start(), system: "s", tools: FAKE_TOOLS, ctx, finish: SUBMIT, generate: model.generate });
+
+  assert.equal(r.outcome, "submitted");
+  assert.deepEqual(r.ok && r.outcome === "submitted" ? r.submission : null, { action: "create", customerId: "C001" });
+  assert.equal(r.answer, null);
+  assert.deepEqual(model.sent[0]?.tools, ["getCustomer", "explode", "submitResult"]);
+  const last = r.run.steps.at(-1);
+  assert.equal(last?.type === "tool_call" ? `${last.tool} ${last.summary}` : null, "submitResult action: create");
+  // Not the last step, so nothing was forced.
+  assert.deepEqual(model.modes, [undefined, undefined]);
+});
+
+test("finish: invalid args → INVALID_ARGS with the Zod issues, the model fixes them next step", async (t) => {
+  quiet(t);
+  const model = scriptedWithMode([
+    turn([{ name: "submitResult", args: { action: "delete", customerId: "C001" } }]),
+    turn([{ name: "submitResult", args: { action: "ask", customerId: "C001" } }]),
+  ]);
+  const r = await runAgent({ messages: start(), system: "s", tools: FAKE_TOOLS, ctx, finish: SUBMIT, generate: model.generate });
+
+  assert.equal(r.outcome, "submitted");
+  assert.equal(r.run.modelCalls, 2);
+  const toolMsg = r.messages[2];
+  const result = toolMsg?.role === "tool" ? toolMsg.results[0]?.result : null;
+  assert.equal(result?.error, "INVALID_ARGS");
+  assert.match(String(result?.message), /action/);
+  assert.ok(r.run.steps.some((s) => s.type === "guardrail" && s.kind === "invalid_submission"));
+});
+
+test("finish: called next to other tools → rejected, the others still run", async (t) => {
+  quiet(t);
+  runs = [];
+  const model = scriptedWithMode([
+    turn([
+      { name: "getCustomer", args: { customerId: "C001" } },
+      { name: "submitResult", args: { action: "create", customerId: "C001" } },
+    ]),
+    turn([{ name: "submitResult", args: { action: "create", customerId: "C001" } }]),
+  ]);
+  const r = await runAgent({ messages: start(), system: "s", tools: FAKE_TOOLS, ctx, finish: SUBMIT, generate: model.generate });
+
+  assert.equal(r.outcome, "submitted");
+  assert.deepEqual(runs, ["getCustomer:C001"]);
+  const toolMsg = r.messages[2];
+  assert.deepEqual(
+    toolMsg?.role === "tool" ? toolMsg.results.map((x) => x.result.error ?? x.result.id) : null,
+    ["C001", "INVALID_ARGS"],
+  );
+});
+
+test("finish: text instead of the call → one nudge, then the call is forced", async (t) => {
+  quiet(t);
+  const model = scriptedWithMode([
+    answer("I think we should create a ticket."),
+    turn([{ name: "submitResult", args: { action: "create", customerId: "C001" } }]),
+  ]);
+  const r = await runAgent({ messages: start(), system: "s", tools: FAKE_TOOLS, ctx, finish: SUBMIT, generate: model.generate });
+
+  assert.equal(r.outcome, "submitted");
+  assert.deepEqual(model.modes, [undefined, "any:submitResult"]);
+  // The nudge is a user message after the text turn: user → assistant → user → (assistant)
+  assert.deepEqual(model.sent[1]?.roles, ["user", "assistant", "user"]);
+  assert.ok(r.run.steps.some((s) => s.type === "guardrail" && s.kind === "no_submission"));
+});
+
+test("finish: text again after the nudge → no_submission", async (t) => {
+  quiet(t);
+  const model = scriptedWithMode([answer("text"), answer("more text")]);
+  const r = await runAgent({ messages: start(), system: "s", tools: FAKE_TOOLS, ctx, finish: SUBMIT, generate: model.generate });
+  assert.equal(r.outcome, "no_submission");
+  assert.equal(r.ok, false);
+});
+
+test("finish: the last step forces the finish call", async (t) => {
+  quiet(t);
+  const model = scriptedWithMode([
+    turn([{ name: "getCustomer", args: { customerId: "C001" } }]),
+    turn([{ name: "submitResult", args: { action: "ask", customerId: "C001" } }]),
+  ]);
+  const r = await runAgent({ messages: start(), system: "s", tools: FAKE_TOOLS, ctx, maxSteps: 2, finish: SUBMIT, generate: model.generate });
+  assert.equal(r.outcome, "submitted");
+  assert.deepEqual(model.modes, [undefined, "any:submitResult"]);
+});
+
+test("finish: without `finish`, a call to that name is just an UNKNOWN_TOOL (chat is unchanged)", async (t) => {
+  quiet(t);
+  const model = scripted([turn([{ name: "submitResult", args: { action: "create", customerId: "C001" } }]), answer("done")]);
+  const r = await runAgent({ messages: start(), system: "s", tools: FAKE_TOOLS, ctx, generate: model.generate });
+  assert.equal(r.outcome, "answered");
+  const call = r.run.steps.find((s) => s.type === "tool_call");
+  assert.equal(call?.type === "tool_call" ? call.errorCode : null, "UNKNOWN_TOOL");
+});
+
+test("finish: a finish tool that is also in the registry is a caller bug", async () => {
+  const model = scripted([]);
+  await assert.rejects(
+    runAgent({ messages: start(), system: "s", tools: FAKE_TOOLS, ctx, finish: { ...SUBMIT, name: "getCustomer" }, generate: model.generate }),
+  );
+});
+
 // ── visible chat + request schema ───────────────────────────────────────
 
 test("fromVisibleChat: earlier assistant turns become plain text, no calls, no raw", () => {

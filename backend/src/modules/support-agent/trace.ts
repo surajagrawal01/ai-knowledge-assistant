@@ -13,7 +13,10 @@ export type GuardrailKind =
     | "too_many_calls"
     | "timeout"
     | "tool_failure"
-    | "empty_response";
+    | "empty_response"
+    // Part C, finish tool only:
+    | "invalid_submission"   // finish call with invalid args, or not alone: answered with INVALID_ARGS
+    | "no_submission";       // text instead of the finish call
 
 export type TraceStep =
     // Once per function call the model made, blocked ones included.

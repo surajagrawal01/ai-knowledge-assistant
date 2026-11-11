@@ -3,16 +3,20 @@
 export { READ_TOOLS, toToolSpecs, buildRegistry } from "./tools/index.js";
 export { defineTool, type ToolContext, type ToolRegistry, type ToolResult, type ToolError, type ToolErrorCode } from "./tools/types.js";
 export { evaluateOrderPolicy, type OrderPolicy } from "./tools/order-policy.js";
-export { executeTool, executeToolCalls, type ToolExecution } from "./tool-executor.js";
+export { CustomerIdSchema, OrderIdSchema } from "./tools/common.js";
+export { executeTool, executeToolCalls, formatIssues, type ToolExecution } from "./tool-executor.js";
 export { userMessage, toolResultsMessage, fromVisibleChat, historySize } from "./history.js";
 export { AGENT_SYSTEM_PROMPT } from "./support-agent.prompt.js";
 // B2: the loop, the chat service and its endpoint.
 export {
     runAgent,
+    finishToolSpec,
     DEFAULT_MAX_STEPS,
     HARD_MAX_STEPS,
     type AgentOutcome,
+    type AgentFailure,
     type AgentRunResult,
+    type FinishTool,
     type RunAgentInput,
 } from "./agent-loop.js";
 export { newRunId, type AgentRun, type TraceStep } from "./trace.js";
