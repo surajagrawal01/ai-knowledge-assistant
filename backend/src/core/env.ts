@@ -18,6 +18,7 @@ const EnvSchema = z.object({
     GEMINI_MODEL: z.string().min(1),
     DATABASE_URL: z.string().min(1),
     DIRECT_URL: z.string().min(1),
+    EMBEDDING_MODEL: z.string().min(1),
 });
 
 export const env = EnvSchema.parse(process.env);   // throws with a clear message if invalid

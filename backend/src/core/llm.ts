@@ -3,9 +3,11 @@
 // This file only translates ONE call to Gemini and back (+ API-level retries).
 import { ApiError, Content, FunctionCallingConfigMode, GoogleGenAI, Part, Tool } from "@google/genai";
 import { env } from "./env.js";
+import { isFiniteVector, normalize, Vector } from "./vector.js";
 
 export const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 export const MODEL = env.GEMINI_MODEL;
+export const EMBEDDING_MODEL = env.EMBEDDING_MODEL;
 
 // Provider-neutral shapes: no Gemini names leak out of this file.
 export type Usage = { inputTokens: number; outputTokens: number };
@@ -334,4 +336,101 @@ export async function generateWithTools(input: GenerateWithToolsInput): Promise<
         finishReason,
         usage,
     };
+}
+
+
+
+// ── Step 4 (Mini 2): embeddings ──────────────────────────────────────────────────────
+//
+// embed() turns texts into vectors. Same rules as the rest of this file: Gemini names
+// stay here, provider failures become LlmApiError, modules see plain number[][].
+//
+//   - one vector per input text, SAME ORDER, same count
+//   - exactly EMBEDDING_DIMENSIONS numbers each (the pgvector column is vector(768))
+//   - normalised to length 1, so cosine similarity = dot product
+//   - documents use "RETRIEVAL_DOCUMENT", questions use "RETRIEVAL_QUERY"
+//   - Changing the model or the dimension = new column + re-embed everything.
+
+export const EMBEDDING_DIMENSIONS = 768;
+
+// Gemini accepts up to 100 texts per embedContent request (verify in the current docs;
+// if they change, only this number changes). Bigger arrays are split here, not by callers.
+export const EMBED_BATCH_SIZE = 100;
+
+// The task types this project uses. Gemini has more (CLASSIFICATION, CLUSTERING, ...);
+// add one here only when a module really needs it.
+export type EmbeddingTaskType = "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY" | "SEMANTIC_SIMILARITY";
+
+export type EmbedOptions = {
+    taskType: EmbeddingTaskType;   // required on purpose: the wrong task type silently lowers search quality
+};
+
+// Splits [t1..t250] into [[t1..t100], [t101..t200], [t201..t250]]. Exported for the offline tests.
+export function splitIntoBatches<T>(items: T[], size: number = EMBED_BATCH_SIZE): T[][] {
+    if (!Number.isInteger(size) || size < 1) throw new Error(`splitIntoBatches: invalid size ${size}`);
+    const batches: T[][] = [];
+    for (let i = 0; i < items.length; i += size) batches.push(items.slice(i, i + size));
+    return batches;
+}
+
+// The part of a Gemini embedContent response we read. Structural, so tests can pass a plain object.
+export type EmbedResponseLike = {
+    embeddings?: { values?: number[] }[];
+};
+
+// Gemini response → validated, normalised vectors. Exported for the offline tests only.
+// Throws a plain Error when the response breaks the contract: that is never safe to store,
+// and retrying the same request would very likely return the same broken shape.
+export function readEmbeddingResponse(
+    res: EmbedResponseLike,
+    expectedCount: number,
+    dimensions: number = EMBEDDING_DIMENSIONS,
+): Vector[] {
+    const embeddings = res.embeddings ?? [];
+    if (embeddings.length !== expectedCount) {
+        // Order and count are the whole contract: vector i MUST belong to text i.
+        throw new Error(`embed: expected ${expectedCount} embeddings, got ${embeddings.length}`);
+    }
+    return embeddings.map((embedding, i) => {
+        const values = embedding.values ?? [];
+        if (values.length !== dimensions) {
+            throw new Error(`embed: embedding ${i} has ${values.length} dimensions, expected ${dimensions}`);
+        }
+        if (!isFiniteVector(values)) throw new Error(`embed: embedding ${i} contains NaN or Infinity`);
+        // Gemini only normalises the full 3072-d output. A truncated 768-d vector is NOT
+        // unit length, so we normalise it here, once, for every caller.
+        return normalize(values);
+    });
+}
+
+// Throws LlmApiError for provider failures, plain Error for caller bugs or a broken response.
+// Never stores anything: storage is Part 2's job.
+export async function embed(texts: string[], options: EmbedOptions): Promise<Vector[]> {
+    if (texts.length === 0) return [];
+    const emptyIndex = texts.findIndex((t) => t.trim() === "");
+    if (emptyIndex !== -1) {
+        // An empty string still gets a vector (a meaningless one). Refuse instead of storing noise.
+        throw new Error(`embed: text ${emptyIndex} is empty`);
+    }
+
+    const vectors: Vector[] = [];
+    // Sequential, not Promise.all: a few batches is fast enough, and parallel batches hit
+    // the rate limit (429) sooner. Each batch gets the normal API retry policy.
+    for (const batch of splitIntoBatches(texts)) {
+        const res = await callWithApiRetry(() =>
+            ai.models.embedContent({
+                model: EMBEDDING_MODEL,
+                contents: batch,   // string[] → one embedding per string, same order
+                config: {
+                    taskType: options.taskType,
+                    outputDimensionality: EMBEDDING_DIMENSIONS,
+                    httpOptions: { timeout: REQUEST_TIMEOUT_MS },
+                },
+            }),
+        );
+        vectors.push(...readEmbeddingResponse(res, batch.length));
+    }
+
+    console.log(`[llm] ${EMBEDDING_MODEL} embed texts=${texts.length} task=${options.taskType} dims=${EMBEDDING_DIMENSIONS}`);
+    return vectors;
 }
