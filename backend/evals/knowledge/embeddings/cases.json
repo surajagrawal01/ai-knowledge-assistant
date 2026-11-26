@@ -1,0 +1,425 @@
+{
+  "_about": "Part 1 embedding eval + playground data. Sentences from 04-strengths-and-limits.md §4. 'question' sentences are embedded as RETRIEVAL_QUERY and 'statement' sentences as RETRIEVAL_DOCUMENT in retrieval mode; everything is SEMANTIC_SIMILARITY in similarity mode. Checks compare scores with each other (orderings), never with a fixed threshold: absolute values change between models, orderings shouldn't.",
+  "sentences": [
+    {
+      "id": "S01",
+      "group": "A. Returns",
+      "role": "question",
+      "text": "Can I return my phone?"
+    },
+    {
+      "id": "S02",
+      "group": "A. Returns",
+      "role": "question",
+      "text": "What's the return process for mobiles?"
+    },
+    {
+      "id": "S03",
+      "group": "A. Returns",
+      "role": "question",
+      "text": "phone wapas kar sakte hai kya?"
+    },
+    {
+      "id": "S04",
+      "group": "A. Returns",
+      "role": "statement",
+      "text": "Phones can be returned within 7 days of delivery."
+    },
+    {
+      "id": "S05",
+      "group": "B. Refunds",
+      "role": "question",
+      "text": "When will I get my refund?"
+    },
+    {
+      "id": "S06",
+      "group": "B. Refunds",
+      "role": "statement",
+      "text": "Refunds are processed within 5–7 business days."
+    },
+    {
+      "id": "S07",
+      "group": "B. Refunds",
+      "role": "question",
+      "text": "Money was deducted but my order failed"
+    },
+    {
+      "id": "S08",
+      "group": "C. Warranty",
+      "role": "question",
+      "text": "Is my laptop battery covered after 8 months?"
+    },
+    {
+      "id": "S09",
+      "group": "C. Warranty",
+      "role": "statement",
+      "text": "Laptops have a 12-month warranty against manufacturing defects."
+    },
+    {
+      "id": "S10",
+      "group": "C. Warranty",
+      "role": "question",
+      "text": "What is not covered by warranty?"
+    },
+    {
+      "id": "S11",
+      "group": "C. Warranty",
+      "role": "question",
+      "text": "What is covered by warranty?"
+    },
+    {
+      "id": "S12",
+      "group": "D. Shipping",
+      "role": "question",
+      "text": "How long does delivery to Jaipur take?"
+    },
+    {
+      "id": "S13",
+      "group": "D. Shipping",
+      "role": "statement",
+      "text": "Zone B deliveries take 4–5 days."
+    },
+    {
+      "id": "S14",
+      "group": "D. Shipping",
+      "role": "question",
+      "text": "Is shipping free above ₹999?"
+    },
+    {
+      "id": "S15",
+      "group": "E. Device how-to",
+      "role": "question",
+      "text": "How do I reset my laptop password?"
+    },
+    {
+      "id": "S16",
+      "group": "E. Device how-to",
+      "role": "question",
+      "text": "How do I turn on the NestBook keyboard backlight?"
+    },
+    {
+      "id": "S17",
+      "group": "F. Traps",
+      "role": "question",
+      "text": "My phone returned an error code"
+    },
+    {
+      "id": "S18",
+      "group": "F. Traps",
+      "role": "question",
+      "text": "What is the status of O020?"
+    },
+    {
+      "id": "S19",
+      "group": "F. Traps",
+      "role": "question",
+      "text": "Is O021 delayed?"
+    },
+    {
+      "id": "S20",
+      "group": "F. Traps",
+      "role": "question",
+      "text": "Do you sell refrigerators?"
+    }
+  ],
+  "pairs": [
+    {
+      "a": "S01",
+      "b": "S02",
+      "predict": "high",
+      "shows": "Paraphrase"
+    },
+    {
+      "a": "S01",
+      "b": "S03",
+      "predict": "high",
+      "shows": "Hinglish works"
+    },
+    {
+      "a": "S01",
+      "b": "S04",
+      "predict": "high",
+      "shows": "Question ↔ policy statement"
+    },
+    {
+      "a": "S01",
+      "b": "S15",
+      "predict": "low",
+      "shows": "Unrelated topic"
+    },
+    {
+      "a": "S01",
+      "b": "S06",
+      "predict": "middle",
+      "shows": "Returns and refunds are neighbours"
+    },
+    {
+      "a": "S05",
+      "b": "S06",
+      "predict": "high",
+      "shows": "Question ↔ answer"
+    },
+    {
+      "a": "S08",
+      "b": "S09",
+      "predict": "high",
+      "shows": "Warranty question ↔ rule"
+    },
+    {
+      "a": "S10",
+      "b": "S11",
+      "predict": "high",
+      "shows": "Negation barely changes the vector"
+    },
+    {
+      "a": "S12",
+      "b": "S13",
+      "predict": "middle",
+      "shows": "Jaipur ↔ zone B only if the model links them"
+    },
+    {
+      "a": "S01",
+      "b": "S17",
+      "predict": "low",
+      "shows": "'returned' in a different sense"
+    },
+    {
+      "a": "S18",
+      "b": "S19",
+      "predict": "high",
+      "shows": "IDs carry no meaning"
+    },
+    {
+      "a": "S20",
+      "b": "S04",
+      "predict": "low",
+      "shows": "Out of scope still has a nearest match"
+    }
+  ],
+  "checks": [
+    {
+      "id": "E01",
+      "mode": "similarity",
+      "kind": "higher",
+      "core": true,
+      "higher": [
+        "S01",
+        "S02"
+      ],
+      "lower": [
+        "S01",
+        "S15"
+      ],
+      "why": "A paraphrase is closer than an unrelated question"
+    },
+    {
+      "id": "E02",
+      "mode": "similarity",
+      "kind": "higher",
+      "core": true,
+      "higher": [
+        "S01",
+        "S03"
+      ],
+      "lower": [
+        "S01",
+        "S15"
+      ],
+      "why": "Hinglish lands near the English question"
+    },
+    {
+      "id": "E03",
+      "mode": "similarity",
+      "kind": "higher",
+      "core": true,
+      "higher": [
+        "S01",
+        "S04"
+      ],
+      "lower": [
+        "S01",
+        "S15"
+      ],
+      "why": "A question is near the rule that answers it"
+    },
+    {
+      "id": "E04",
+      "mode": "similarity",
+      "kind": "higher",
+      "core": true,
+      "higher": [
+        "S01",
+        "S04"
+      ],
+      "lower": [
+        "S01",
+        "S06"
+      ],
+      "why": "Return question: return rule beats refund rule (neighbours, but not equal)"
+    },
+    {
+      "id": "E05",
+      "mode": "similarity",
+      "kind": "higher",
+      "core": true,
+      "higher": [
+        "S05",
+        "S06"
+      ],
+      "lower": [
+        "S05",
+        "S13"
+      ],
+      "why": "Refund question: refund rule beats shipping rule"
+    },
+    {
+      "id": "E06",
+      "mode": "similarity",
+      "kind": "higher",
+      "core": true,
+      "higher": [
+        "S08",
+        "S09"
+      ],
+      "lower": [
+        "S08",
+        "S13"
+      ],
+      "why": "Warranty question: warranty rule beats shipping rule"
+    },
+    {
+      "id": "E07",
+      "mode": "similarity",
+      "kind": "higher",
+      "core": true,
+      "higher": [
+        "S15",
+        "S16"
+      ],
+      "lower": [
+        "S15",
+        "S06"
+      ],
+      "why": "Two laptop how-to questions are closer than how-to vs refund rule"
+    },
+    {
+      "id": "E08",
+      "mode": "similarity",
+      "kind": "higher",
+      "core": true,
+      "higher": [
+        "S01",
+        "S04"
+      ],
+      "lower": [
+        "S01",
+        "S17"
+      ],
+      "why": "Meaning beats shared words: 'returned an error code' is not about returns"
+    },
+    {
+      "id": "L01",
+      "mode": "similarity",
+      "kind": "higher",
+      "core": false,
+      "higher": [
+        "S10",
+        "S11"
+      ],
+      "lower": [
+        "S10",
+        "S13"
+      ],
+      "why": "LIMIT: 'not covered' and 'covered' sit very close (negation is weak)"
+    },
+    {
+      "id": "L02",
+      "mode": "similarity",
+      "kind": "higher",
+      "core": false,
+      "higher": [
+        "S18",
+        "S19"
+      ],
+      "lower": [
+        "S18",
+        "S13"
+      ],
+      "why": "LIMIT: two different order IDs look alike; IDs belong to tools, not search"
+    },
+    {
+      "id": "L03",
+      "mode": "similarity",
+      "kind": "higher",
+      "core": false,
+      "higher": [
+        "S12",
+        "S13"
+      ],
+      "lower": [
+        "S12",
+        "S09"
+      ],
+      "why": "EXPLORE: does the model link 'Jaipur' to 'zone B'?"
+    },
+    {
+      "id": "R01",
+      "mode": "retrieval",
+      "kind": "top_document",
+      "core": true,
+      "query": "S01",
+      "expected": "S04",
+      "why": "Return question retrieves the return rule"
+    },
+    {
+      "id": "R02",
+      "mode": "retrieval",
+      "kind": "top_document",
+      "core": true,
+      "query": "S03",
+      "expected": "S04",
+      "why": "Hinglish return question retrieves the return rule"
+    },
+    {
+      "id": "R03",
+      "mode": "retrieval",
+      "kind": "top_document",
+      "core": true,
+      "query": "S05",
+      "expected": "S06",
+      "why": "Refund question retrieves the refund rule"
+    },
+    {
+      "id": "R04",
+      "mode": "retrieval",
+      "kind": "top_document",
+      "core": true,
+      "query": "S08",
+      "expected": "S09",
+      "why": "Warranty question retrieves the warranty rule"
+    },
+    {
+      "id": "R05",
+      "mode": "retrieval",
+      "kind": "top_document",
+      "core": false,
+      "query": "S12",
+      "expected": "S13",
+      "why": "EXPLORE: Jaipur question retrieves the zone B rule"
+    },
+    {
+      "id": "R06",
+      "mode": "retrieval",
+      "kind": "best_match_lower",
+      "core": true,
+      "outOfScope": "S20",
+      "inScope": [
+        "S01",
+        "S05",
+        "S08"
+      ],
+      "why": "The refrigerator question's best match scores lower than any in-scope question's best match (the gap a threshold uses)"
+    }
+  ],
+  "passBar": "all core checks pass; L/explore checks are reported, not scored"
+}

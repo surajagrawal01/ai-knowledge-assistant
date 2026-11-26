@@ -17,7 +17,11 @@
     "eval:extract": "tsx --env-file=.env evals/ticket-extractor/run.ts",
     "test:triage": "tsx --env-file=.env --test evals/triage/triage.test.ts",
     "eval:triage": "tsx --env-file=.env evals/triage/run.ts",
-    "check:confirm": "tsx --env-file=.env scripts/triage/check-confirm.ts"
+    "check:confirm": "tsx --env-file=.env scripts/triage/check-confirm.ts",
+    "try:embed": "tsx --env-file=.env scripts/knowledge/try-embed.ts",
+    "play:embed": "tsx --env-file=.env scripts/knowledge/embed-playground.ts",
+    "test:embed": "tsx --env-file=.env --test evals/knowledge/embeddings.offline.test.ts",
+    "eval:embed": "tsx --env-file=.env evals/knowledge/embeddings/run.ts"
   },
   "keywords": [],
   "author": "",
